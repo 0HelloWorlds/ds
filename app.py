@@ -1,30 +1,44 @@
-import joblib
+
 import streamlit as st
+import joblib
 import numpy as np
 import pandas as pd
 
-# Load the saved artifacts
-scaler = joblib.load('scaler.pkl')
-model = joblib.load('mlp_model.pkl')
+# Set page title
+st.set_page_config(page_title='CA House Price Predictor')
 
-# Define the features in order
-features = ['longitude', 'latitude', 'housing_median_age', 'total_rooms', 
-            'total_bedrooms', 'population', 'households', 'median_income', 
-            'ocean_proximity_INLAND', 'ocean_proximity_ISLAND', 
+# Load the saved scaler and model
+try:
+    scaler = joblib.load('scaler.pkl')
+    model = joblib.load('mlp_model.pkl')
+except Exception as e:
+    st.error(f"Error loading model files: {e}")
+
+# Feature names matching the training set
+features = ['longitude', 'latitude', 'housing_median_age', 'total_rooms',
+            'total_bedrooms', 'population', 'households', 'median_income',
+            'ocean_proximity_INLAND', 'ocean_proximity_ISLAND',
             'ocean_proximity_NEAR BAY', 'ocean_proximity_NEAR OCEAN']
 
 st.title("California House Price Predictor")
+st.write("Enter the following details to estimate the median house value:")
 
-# Create inputs
-inputs = []
-for feat in features:
-    val = st.number_input(f"Enter {feat}", value=0.0)
-    inputs.append(val)
+# Create a layout with two columns for input fields
+col1, col2 = st.columns(2)
+input_data = []
 
-if st.button("Predict"):
-    # Transform input and predict
-    X_input = np.array([inputs])
+for i, feat in enumerate(features):
+    with col1 if i % 2 == 0 else col2:
+        val = st.number_input(f"{feat.replace('_', ' ').title()}", value=0.0)
+        input_data.append(val)
+
+if st.button("Predict Price"):
+    # Prepare data for prediction
+    X_input = np.array([input_data])
     X_scaled = scaler.transform(X_input)
+    
+    # Make prediction
     prediction = model.predict(X_scaled)
     
-    st.success(f"The predicted house value is: ${prediction[0]:,.2f}")
+    # Display result
+    st.success(f"### Estimated House Value: ${prediction[0]:,.2f}")
